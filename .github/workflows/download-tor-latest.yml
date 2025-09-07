@@ -1,0 +1,35 @@
+name: Download Latest Tor Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  download-latest-tor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      - name: Get latest release info from torproject/tor
+        id: get_release
+        run: |
+          response=$(curl -s https://api.github.com/repos/torproject/tor/releases/latest)
+          tag_name=$(echo "$response" | jq -r '.tag_name')
+          tarball_url=$(echo "$response" | jq -r '.tarball_url')
+          echo "Latest tag: $tag_name"
+          echo "tarball_url=$tarball_url" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
+
+      - name: Download latest release tarball
+        run: |
+          mkdir tor-latest
+          curl -L "${{ steps.get_release.outputs.tarball_url }}" -o tor-latest/tor.tar.gz
+
+      - name: Extract tarball
+        run: |
+          tar -xzf tor-latest/tor.tar.gz -C tor-latest
+          echo "Tor source extracted to tor-latest/"
+
+      - name: List extracted contents
+        run: |
+          ls -la tor-latest
